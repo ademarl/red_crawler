@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	_ "database/sql"
-    _ "github.com/go-sql-driver/mysql"
+	"database/sql"
+    _"github.com/go-sql-driver/mysql"
 )
 
 
@@ -31,6 +31,10 @@ const PREFIX_FLUCTUATION = "Dia</span></td>\n					<td class=\"data w1\"><span cl
 const SUFFIX_FLUCTUATION = "<"
 const PREFIX_FONT = ">"
 const SUFFIX_FONT = "%"
+
+// File containing user and password for MySQL
+const MYSQL_SETTINGS = "mysql_settings.txt"
+const DATABASE_NAME = "top_ten_shares"
 
 // Wait time between requests to the target website in milliseconds. Might need calibration
 const WAIT = 50
@@ -69,25 +73,93 @@ func main() {
 	shares := crawl_shares(links, papers, n)
 
 	// Sort out the 10 most valuable
-	// REFACTOR: The number of shares is not that big, therefore, sorting is ok. To optimize: add all elements to a max heap and take the first 10 elements
+	// #REFACTOR: The number of shares is not that big, therefore, sorting is ok. To optimize: add all elements to a max heap and take the first 10 elements
 	sort.SliceStable(shares, func(i, j int) bool { return shares[i].value > shares[j].value })
 	top_ten := shares[0 : 10]
 
-	// Prints the most aluable shares to the standard output
+	// Prints the most valuable shares to the standard output
 	fmt.Println("\nTop Ten Shares\n\n")
 	for i:= 0; i <10; i++ {
 		printPaper(top_ten[i])
 	}
 	fmt.Println("\n")
 
-	// Create a database and insert the 10 itens
+	db_persist(top_ten)
 }
 
 
 //===========================================================================
 
 
-// Auxiliar function to print the targeted elements of a paper
+// Reads user and password for MySQL environment from file and returns the login format
+func mysql_login_info() string {
+	f_mysql, err := ioutil.ReadFile(MYSQL_SETTINGS)
+	if err != nil { panic("Invalid login and password formatting for MySQL") }
+	login := strings.TrimSpace(string(f_mysql))
+	
+	return strings.Replace(login, "\n", ":", 1)
+}	
+
+
+// Creates a database and inserts the itens
+func db_persist(top []Paper) {
+
+	login := mysql_login_info()
+
+	// Opens or creates the database if it doesnt exist
+	db, err := sql.Open("mysql", login+"@tcp(127.0.0.1:3306)/")
+	if err != nil { panic("Cannot open MySQL") }
+	defer db.Close()
+
+	_,err = db.Exec("CREATE DATABASE IF NOT EXISTS " + DATABASE_NAME)
+	if err != nil { panic(err) }
+	db.Close()
+
+	db, err = sql.Open("mysql", login+"@tcp(127.0.0.1:3306)/" + DATABASE_NAME)
+	if err != nil { panic(err) }
+	defer db.Close()
+
+	_,err = db.Exec(`CREATE TABLE IF NOT EXISTS shares(
+	share_name VARCHAR(10) NOT NULL,
+    company_name VARCHAR(100),
+    market_value BIGINT,
+    daily_fluctuation FLOAT,
+    PRIMARY KEY (share_name));`)
+	if err != nil { panic(err) }
+
+	_,err = db.Exec("DROP TABLE shares;")
+	if err != nil { panic(err) }
+
+	_,err = db.Exec(`CREATE TABLE IF NOT EXISTS shares(
+	share_name VARCHAR(10) NOT NULL,
+    company_name VARCHAR(100),
+    market_value BIGINT,
+    daily_fluctuation FLOAT,
+    PRIMARY KEY (share_name));`)
+	if err != nil { panic(err) }
+
+
+	_,err = db.Exec("ALTER DATABASE top_ten_shares CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;")
+	if err != nil { panic(err) }
+	_,err = db.Exec("ALTER TABLE shares CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+	if err != nil { panic(err) }
+	_,err = db.Exec("ALTER TABLE shares CHANGE company_name company_name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+	if err != nil { panic(err) }
+
+	row, err := db.Prepare("INSERT INTO shares VALUES( ?, ?, ?, ? )")
+	if err != nil { panic(err) }
+	
+	for i := range top {
+		_,err = row.Exec(top[i].share, top[i].company, top[i].value, top[i].fluctuation)
+		if err != nil { panic(err) }
+	}
+
+	// Closes
+	db.Close()
+}
+
+
+// Auxiliar function to print the targeted elements of a share
 func printPaper (share Paper) {
 
 	fmt.Println(share.share, share.company, share.value, share.fluctuation)
@@ -146,6 +218,7 @@ func crawl_shares(links []string, papers []string, n int) []Paper {
 
 	// Parallel crawling with channels as semaphores
 	semaphore := make(chan green, n);
+
 	for i := range papers {
 		go share_parser(shares, links[i], papers[i], i, semaphore)
 		// Server is unhappy with too many requests, slow it down
@@ -165,7 +238,7 @@ func crawl_shares(links []string, papers []string, n int) []Paper {
 // Extracts the targeted information from an individual URL, prints the result to 'shares[i]'
 // Some of the links are broken or no longer available, therefore some error handling is necessary
 // Broken links results in such a share declaration: Paper{acronym, "Website error", 0, 0.0}, but execution continues normally
-// REFACTOR: Encapsulate error handling to avoid repetition
+// #REFACTOR: Encapsulate error handling to avoid repetition
 func share_parser(shares []Paper, link string, acronym string, i int, semaphore chan green) {
 
 
@@ -174,6 +247,8 @@ func share_parser(shares []Paper, link string, acronym string, i int, semaphore 
 
 		// Parses the HTML for the company name
 		company := strings.Join(trim_select(paper_html, PREFIX_COMPANY, SUFFIX_COMPANY), ",")
+		company, err := strconv.Unquote(`"` + company + `"`)
+		if err != nil { panic("Cannot unquote string") }
 		if(company == "") {
 			shares[i] = Paper{acronym, "Website error", 0, 0.0}
 			//printPaper (shares[i])
