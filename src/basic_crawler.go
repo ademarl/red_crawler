@@ -4,6 +4,12 @@ package main
 import "time"
 
 
+//===========================================================================
+// Defines the behaviour of the crawler. Channels are used as semaphores to
+// speedup the execution while waiting for http replies
+//===========================================================================
+
+
 // Wait time between requests to the target website in milliseconds. Might need calibration
 const WAIT = 100
 

@@ -11,6 +11,8 @@ import (
 
 
 //===========================================================================
+// Defines functions related to parsing and http fetch
+//===========================================================================
 
 
 // Constant strings used for the URL and splicing the HTML files
@@ -90,7 +92,6 @@ func Fundamentus_parser() ([]string, []string) {
 
 	return links, papers
 }
-
 
 
 // Extracts the targeted information from an individual URL, prints the result to 'shares[i]'

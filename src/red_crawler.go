@@ -8,6 +8,12 @@ import (
 
 
 //===========================================================================
+// Main method
+// The application is a web crawler that searches for information of stock
+// market shares of Bovespa on Fundamentus webpage
+// After parsing and crawling, the top ten shares by market value are
+// selected and inserted in a MySQL database
+//===========================================================================
 
 
 // Main function

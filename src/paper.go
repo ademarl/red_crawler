@@ -5,7 +5,9 @@ import "fmt"
 
 
 //===========================================================================
-
+// Defines a struct for a stock market share with the 4 relevant fields
+// Also defines a print method for the struct
+//===========================================================================
 
 // A struct representing a share with the relevant data
 type Paper struct {

@@ -11,7 +11,7 @@ The development was commissioned as a challenge by the marketing company Red Ven
 COMPILE & RUN
 To run the application, first configure the mysql_settings file with a valid login followed by the password.
 Then, simply use the run.sh script (which also compiles) by the command line './run.sh' from the project directory that contains this file.
-It might be necessary to give this file execution permissions by using the command 'chmod +x run.sh'
+It might be necessary to give execution permissions to this file by using the command 'chmod +x run.sh'
 
 At the end of the execution
 
@@ -22,12 +22,18 @@ KNOWN ISSUES
 A macro called WAIT in the main source file 'src/red_crawler.go' controls how long the application waits in between parallel requests. It may be better tuned.
 Beware that here there is a tradeoff of performance vs reliability.
 
+-The final list of 10 shares is, mostly, inconsistent.
+Testing it, I have observed some webpages are continually broken and other requests often fail randomly.
+These observations seem to be independent of timed out connections because of frequent requests described above.
+
 -Special Unicode characters in terminal and MySQL were not handled asthetically
+The MySQL environment is automatically configured (by the program) to accept them
+Change configurations back manually if needed for other purposes.
 
 
 PORTABILITY
 
-This is the environment which was used for evelopment and refers to GOLANG.
+This is the environment which was used for development and refers to GOLANG.
 
 GOARCH="amd64"
 GOBIN=""

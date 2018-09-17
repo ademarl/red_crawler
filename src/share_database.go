@@ -18,7 +18,8 @@ const MYSQL_SETTINGS = "mysql_settings.txt"
 const DATABASE_NAME = "top_ten_shares"
 // #REFACTOR: the table's name should be a parameter, currently it is 'shares'
 
-// Global Database variable
+// Global Database
+// #REFACTOR: should be treated as an object and it's functions as methods 
 var db *sql.DB = nil
 
 //===========================================================================
@@ -111,7 +112,6 @@ func insert_rows (top []Paper) {
 
 
 // Creates a database and inserts the itens
-// #REFACTOR all these functions should be methods of an object
 func DB_persist(top []Paper) {
 
 	open_or_create()
