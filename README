@@ -9,17 +9,24 @@ The development was commissioned as a challenge by the marketing company Red Ven
 
 
 COMPILE & RUN
-To run the application, first configure the mysql_settings file with a valid login followed by the password.
+To run the application, first configure the 'mysql_settings' file with a valid login followed by the password.
 Then, simply use the run.sh script (which also compiles) by the command line './run.sh' from the project directory that contains this file.
 It might be necessary to give execution permissions to this file by using the command 'chmod +x run.sh'
 
-At the end of the execution
+At the end of the execution, one might check the results in a MYSQL environment with 'select * from top_ten_shares.shares;'.
+
+
+TESTING
+
+Most of the functions integrate different scopes and technologies, besides they already implement error handling to some extent.
+Therefore, it makes more sense to do a system test of this application than many unit tests.
+A few unit tests are presented as examples of how this is done, though. To run the tests simply execute the 'test.sh' script from the project directory
 
 
 KNOWN ISSUES
 
 -The HTTP requests might be blocked or timed out by the website because of its volume.
-A macro called WAIT in the main source file 'src/red_crawler.go' controls how long the application waits in between parallel requests. It may be better tuned.
+A macro called WAIT in the source file 'src/basic_crawler.go' controls how long the application waits in between parallel requests. It may be better tuned.
 Beware that here there is a tradeoff of performance vs reliability.
 
 -The final list of 10 shares is, mostly, inconsistent.
